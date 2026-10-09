@@ -1,0 +1,99 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis-manager
+  labels:
+    app: redis-manager
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis-manager
+  template:
+    metadata:
+      labels:
+        app: redis-manager
+    spec:
+      containers:
+        - name: redis-manager
+          image: redis-manager:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+              name: http
+          env:
+            - name: PORT
+              value: "8080"
+            - name: RACK_ENV
+              value: "production"
+            - name: SQLITE_DB_PATH
+              value: "/app/data/redis_manager.sqlite3"
+          volumeMounts:
+            - name: sqlite-storage
+              mountPath: /app/data
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+      volumes:
+        - name: sqlite-storage
+          persistentVolumeClaim:
+            claimName: redis-manager-pvc
+---
+# PVC para persistir o banco SQLite3 no OpenShift
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: redis-manager-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-manager-service
+  labels:
+    app: redis-manager
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8080
+      targetPort: 8080
+      name: http
+  selector:
+    app: redis-manager
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: redis-manager-route
+  labels:
+    app: redis-manager
+spec:
+  to:
+    kind: Service
+    name: redis-manager-service
+  port:
+    targetPort: http
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect

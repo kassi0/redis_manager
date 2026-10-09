@@ -1,0 +1,55 @@
+<div class="flex flex-col md:flex-row md:items-center justify-between pb-8 mb-8 border-b border-slate-800 gap-4">
+  <div>
+    <h2 class="text-2xl font-bold tracking-tight text-white flex items-center gap-3">
+      Detalhes da Chave
+    </h2>
+    <p class="text-sm text-slate-400 mt-1">
+      Servidor: <span class="text-brand-400 font-semibold"><%= h @current_server&.dig('name') %></span>
+    </p>
+  </div>
+  <div>
+    <a href="/keys" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-surface-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-all">
+      &larr; Voltar para a Lista
+    </a>
+  </div>
+</div>
+
+<div class="bg-surface-900 border border-slate-800 rounded-2xl p-6 shadow-xl max-w-4xl">
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pb-6 border-b border-slate-800">
+    <div>
+      <span class="block text-[11px] font-semibold uppercase text-slate-400">Nome da Chave</span>
+      <span class="text-base font-mono font-bold text-sky-400 break-all"><%= h @key %></span>
+    </div>
+    <div>
+      <span class="block text-[11px] font-semibold uppercase text-slate-400">Tipo</span>
+      <span class="inline-flex items-center px-2 py-0.5 mt-1 rounded text-xs font-bold uppercase bg-blue-500/10 text-blue-400 border border-blue-500/20">
+        <%= h @type %>
+      </span>
+    </div>
+    <div>
+      <span class="block text-[11px] font-semibold uppercase text-slate-400">Tempo de Expiração (TTL)</span>
+      <span class="text-sm font-mono text-slate-200 mt-1 block">
+        <%= @ttl == -1 ? 'Infinito (-1)' : "#{@ttl} segundos" %>
+      </span>
+    </div>
+  </div>
+
+  <div class="mt-6">
+    <div class="flex items-center justify-between mb-3">
+      <span class="text-xs font-semibold uppercase text-slate-400">Conteúdo do Valor (Raw / JSON)</span>
+    </div>
+    <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 overflow-x-auto max-h-[500px]">
+      <pre class="font-mono text-sm text-emerald-400 leading-relaxed"><code><%= h(@value.is_a?(String) ? @value : JSON.pretty_generate(@value)) rescue h(@value.to_s) %></code></pre>
+    </div>
+  </div>
+
+  <div class="mt-8 pt-6 border-t border-slate-800 flex justify-end">
+    <form action="/keys/del" method="post" onsubmit="return confirm('Deseja realmente remover esta chave permanentemente do Redis?');">
+      <input type="hidden" name="key" value="<%= h @key %>">
+      <button type="submit" class="px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-xl text-sm font-semibold transition-all flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+        Excluir Chave
+      </button>
+    </form>
+  </div>
+</div>

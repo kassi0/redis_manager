@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  redis-manager:
+    build: .
+    container_name: redis-manager-app
+    ports:
+      - "8080:8080"
+    volumes:
+      - redis_sqlite_data:/app/data
+    environment:
+      - PORT=8080
+      - RACK_ENV=production
+      - SQLITE_DB_PATH=/app/data/redis_manager.sqlite3
+
+volumes:
+  redis_sqlite_data:

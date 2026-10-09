@@ -1,0 +1,87 @@
+<div class="flex-1 p-6 md:p-8 flex flex-col h-full max-w-6xl mx-auto w-full">
+  <div class="flex flex-col md:flex-row md:items-center justify-between pb-4 mb-4 border-b border-slate-800 gap-4">
+    <div>
+      <h2 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+        Terminal Web CLI
+      </h2>
+      <p class="text-xs text-slate-400 mt-0.5">
+        Conectado em: <span class="text-brand-400 font-mono"><%= h @current_server&.dig('name') %> (db<%= @active_db %>)</span>
+      </p>
+    </div>
+    <div class="flex gap-2">
+      <a href="/" class="px-3 py-1.5 bg-surface-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg text-xs font-semibold">
+        &larr; Voltar para o Manager
+      </a>
+    </div>
+  </div>
+
+  <div class="flex-1 bg-surface-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl flex flex-col">
+    <!-- Top bar do terminal -->
+    <div class="bg-slate-950 px-4 py-2.5 border-b border-slate-800 flex items-center justify-between shrink-0">
+      <div class="flex items-center space-x-2">
+        <div class="w-2.5 h-2.5 rounded-full bg-red-500/80"></div>
+        <div class="w-2.5 h-2.5 rounded-full bg-amber-500/80"></div>
+        <div class="w-2.5 h-2.5 rounded-full bg-emerald-500/80"></div>
+        <span class="text-xs font-mono text-slate-400 ml-2">redis-cli — <%= h @current_server&.dig('host') %>:<%= h @current_server&.dig('port') %> [db<%= @active_db %>]</span>
+      </div>
+      <div class="text-[11px] text-slate-500 font-mono">
+        PING, DBSIZE, INFO, GET &lt;key&gt;
+      </div>
+    </div>
+
+    <!-- Janela de output -->
+    <div id="terminalScreen" class="flex-1 p-5 overflow-y-auto font-mono text-xs space-y-2 bg-slate-950">
+      <div class="text-slate-500 italic">Terminal conectado a <%= h @current_server&.dig('name') %> (<%= h @current_server&.dig('host') %>).</div>
+      <div class="text-slate-500 italic">Comandos críticos como FLUSHALL e SHUTDOWN são bloqueados por segurança.</div>
+    </div>
+
+    <!-- Barra de entrada -->
+    <form id="cliForm" class="bg-surface-900 px-4 py-3 border-t border-slate-800 flex items-center gap-3 shrink-0">
+      <span class="font-mono font-bold text-brand-400 text-sm">></span>
+      <input type="text" id="cliInput" autocomplete="off" placeholder="Digite o comando Redis e pressione Enter..."
+             class="flex-1 bg-transparent text-slate-100 font-mono text-xs border-none focus:outline-none placeholder:text-slate-600">
+      <button type="submit" class="px-3.5 py-1.5 bg-brand-600 hover:bg-brand-500 text-white rounded-lg text-xs font-semibold transition-all">
+        Enviar
+      </button>
+    </form>
+  </div>
+</div>
+
+<script>
+  const cliForm = document.getElementById('cliForm');
+  const cliInput = document.getElementById('cliInput');
+  const terminalScreen = document.getElementById('terminalScreen');
+
+  cliForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const cmd = cliInput.value.trim();
+    if (!cmd) return;
+
+    appendLine('> ' + cmd, 'text-sky-400 font-semibold');
+    cliInput.value = '';
+
+    try {
+      const res = await fetch('/cli/exec', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ command: cmd })
+      });
+      const data = await res.json();
+      if (data.error) {
+        appendLine('(error) ' + data.error, 'text-red-400');
+      } else {
+        appendLine(data.output || '(nil)', 'text-emerald-300');
+      }
+    } catch (err) {
+      appendLine('Erro de rede: ' + err.message, 'text-red-400');
+    }
+    terminalScreen.scrollTop = terminalScreen.scrollHeight;
+  });
+
+  function appendLine(text, classNames) {
+    const div = document.createElement('div');
+    div.className = 'break-all whitespace-pre-wrap ' + classNames;
+    div.textContent = text;
+    terminalScreen.appendChild(div);
+  }
+</script>

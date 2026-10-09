@@ -1,0 +1,208 @@
+<!-- Cabeçalho da Página Inicial -->
+<div class="flex flex-col md:flex-row md:items-center justify-between pb-8 mb-8 border-b border-slate-800 gap-4">
+  <div>
+    <h2 class="text-2xl font-bold tracking-tight text-white flex items-center gap-3">
+      Visão Geral do Ambiente Redis
+    </h2>
+    <p class="text-sm text-slate-400 mt-1">
+      Monitore todos os clusters cadastrados e inspecione as métricas do nó ativo.
+    </p>
+  </div>
+  <div class="flex items-center gap-3">
+    <a href="/settings" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-brand-600 hover:bg-brand-500 text-white shadow-lg shadow-brand-600/20 transition-all">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+      Gerenciar Servidores
+    </a>
+    <a href="/" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-surface-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-all">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+      Atualizar
+    </a>
+  </div>
+</div>
+
+<!-- Grid de Servidores Cadastrados -->
+<div class="mb-10">
+  <div class="flex items-center justify-between mb-4">
+    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">
+      Servidores / Instâncias Cadastradas (<%= @servers.size %>)
+    </h3>
+    <a href="/settings" class="text-xs text-brand-400 hover:underline">Configurar credenciais & portas &rarr;</a>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+    <% @servers.each do |s| %>
+      <% 
+        st = @server_statuses[s['id']] || {} 
+        is_active = @current_server && s['id'] == @current_server['id']
+      %>
+      <div class="relative group bg-surface-900 border <%= is_active ? 'border-brand-500/60 ring-2 ring-brand-500/20' : 'border-slate-800' %> rounded-2xl p-5 hover:border-slate-700 transition-all shadow-lg flex flex-col justify-between">
+        <div>
+          <div class="flex items-start justify-between gap-2 mb-3">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="font-bold text-base text-white tracking-tight"><%= h s['name'] %></span>
+                <% if is_active %>
+                  <span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-brand-500/20 text-brand-300 border border-brand-500/30">Ativo</span>
+                <% end %>
+              </div>
+              <p class="text-xs font-mono text-slate-400 mt-0.5">
+                <%= h s['host'] %>:<%= h s['port'] %> (db <%= h s['db'] %>)
+              </p>
+            </div>
+            <% if st[:online] %>
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1.5 animate-pulse"></span> Online
+              </span>
+            <% else %>
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-500/10 text-red-400 border border-red-500/20">
+                <span class="w-1.5 h-1.5 rounded-full bg-red-400 mr-1.5"></span> Offline
+              </span>
+            <% end %>
+          </div>
+
+          <% if st[:online] %>
+            <div class="grid grid-cols-3 gap-2 my-4 py-3 px-3 rounded-xl bg-surface-800/60 border border-slate-800/80 text-center">
+              <div>
+                <span class="block text-[10px] font-semibold uppercase text-slate-400">Versão</span>
+                <span class="text-xs font-semibold text-slate-200"><%= h st[:version] %></span>
+              </div>
+              <div>
+                <span class="block text-[10px] font-semibold uppercase text-slate-400">Memória</span>
+                <span class="text-xs font-semibold text-slate-200"><%= h st[:used_memory] %></span>
+              </div>
+              <div>
+                <span class="block text-[10px] font-semibold uppercase text-slate-400">Clientes</span>
+                <span class="text-xs font-semibold text-slate-200"><%= h st[:clients] %></span>
+              </div>
+            </div>
+          <% else %>
+            <div class="my-4 py-2 px-3 rounded-xl bg-red-950/20 border border-red-900/30 text-xs text-red-400">
+              <%= h st[:error] || "Não foi possível conectar." %>
+            </div>
+          <% end %>
+        </div>
+
+        <div class="pt-3 border-t border-slate-800/60 flex items-center justify-between mt-2">
+          <span class="text-[11px] text-slate-400 flex items-center gap-1">
+            <% if s['password'] && !s['password'].empty? %>
+              <svg class="w-3.5 h-3.5 text-amber-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"></path></svg>
+              Autenticado
+            <% else %>
+              Sem senha
+            <% end %>
+          </span>
+          <div class="flex items-center gap-2">
+            <% unless is_active %>
+              <a href="/switch?server_id=<%= s['id'] %>" class="text-xs font-semibold text-brand-400 hover:text-brand-300">
+                Conectar &rarr;
+              </a>
+            <% end %>
+            <a href="/settings?edit_id=<%= s['id'] %>" class="text-xs text-slate-400 hover:text-slate-200 p-1">
+              Editar
+            </a>
+          </div>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<!-- Seção do Nó Ativo -->
+<% if @current_server %>
+  <div class="pt-4 border-t border-slate-800">
+    <div class="flex items-center justify-between mb-6">
+      <div>
+        <h3 class="text-lg font-bold text-white flex items-center gap-2">
+          Métricas Detalhadas do Nó Ativo: <span class="text-brand-400"><%= h @current_server['name'] %></span>
+        </h3>
+        <p class="text-xs text-slate-400 font-mono mt-0.5">
+          Conexão: redis://<%= h @current_server['host'] %>:<%= h @current_server['port'] %>/<%= h @current_server['db'] %>
+        </p>
+      </div>
+      <div class="flex gap-2">
+        <a href="/keys" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-surface-800 hover:bg-slate-700 text-slate-200 border border-slate-700">Explorar Chaves</a>
+        <a href="/cli" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-surface-800 hover:bg-slate-700 text-slate-200 border border-slate-700">Abrir CLI</a>
+      </div>
+    </div>
+
+    <% if @info %>
+      <!-- Grid de Cartões de Métricas -->
+      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+        <div class="bg-surface-900 border border-slate-800 p-4 rounded-xl shadow-sm">
+          <span class="text-[11px] font-semibold uppercase text-slate-400">Total Chaves</span>
+          <div class="text-2xl font-bold text-white mt-1"><%= @db_size %></div>
+          <span class="text-[11px] text-slate-400">No DB selecionado</span>
+        </div>
+
+        <div class="bg-surface-900 border border-slate-800 p-4 rounded-xl shadow-sm">
+          <span class="text-[11px] font-semibold uppercase text-slate-400">Memória Usada</span>
+          <div class="text-2xl font-bold text-sky-400 mt-1"><%= h @info['used_memory_human'] %></div>
+          <span class="text-[11px] text-slate-400">Pico: <%= h @info['used_memory_peak_human'] %></span>
+        </div>
+
+        <div class="bg-surface-900 border border-slate-800 p-4 rounded-xl shadow-sm">
+          <span class="text-[11px] font-semibold uppercase text-slate-400">Clientes Ativos</span>
+          <div class="text-2xl font-bold text-emerald-400 mt-1"><%= h @info['connected_clients'] %></div>
+          <span class="text-[11px] text-slate-400">Bloqueados: <%= h @info['blocked_clients'] %></span>
+        </div>
+
+        <div class="bg-surface-900 border border-slate-800 p-4 rounded-xl shadow-sm">
+          <span class="text-[11px] font-semibold uppercase text-slate-400">Operações / seg</span>
+          <div class="text-2xl font-bold text-amber-400 mt-1"><%= h @info['instantaneous_ops_per_sec'] %></div>
+          <span class="text-[11px] text-slate-400">Tempo real</span>
+        </div>
+
+        <div class="bg-surface-900 border border-slate-800 p-4 rounded-xl shadow-sm">
+          <span class="text-[11px] font-semibold uppercase text-slate-400">Hit Rate</span>
+          <% 
+            hits = @info['keyspace_hits'].to_f
+            misses = @info['keyspace_misses'].to_f
+            total = hits + misses
+            rate = total > 0 ? ((hits / total) * 100).round(1) : 0
+          %>
+          <div class="text-2xl font-bold text-purple-400 mt-1"><%= rate %>%</div>
+          <span class="text-[11px] text-slate-400"><%= hits.to_i %> hits / <%= misses.to_i %> miss</span>
+        </div>
+
+        <div class="bg-surface-900 border border-slate-800 p-4 rounded-xl shadow-sm">
+          <span class="text-[11px] font-semibold uppercase text-slate-400">Uptime</span>
+          <div class="text-2xl font-bold text-slate-200 mt-1"><%= h @info['uptime_in_days'] %> d</div>
+          <span class="text-[11px] text-slate-400"><%= (@info['uptime_in_seconds'].to_i / 3600.0).round(1) %> horas</span>
+        </div>
+      </div>
+
+      <!-- Tabela com parâmetros do servidor -->
+      <div class="bg-surface-900 border border-slate-800 rounded-2xl overflow-hidden shadow-lg">
+        <div class="px-6 py-4 border-b border-slate-800 bg-surface-800/40">
+          <h4 class="text-sm font-semibold text-slate-200">Propriedades do Nó Redis</h4>
+        </div>
+        <div class="divide-y divide-slate-800 text-sm">
+          <div class="px-6 py-3 flex items-center justify-between">
+            <span class="text-slate-400">Papel na Topologia (Role)</span>
+            <span class="px-2 py-0.5 rounded text-xs font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20 uppercase"><%= h @info['role'] %></span>
+          </div>
+          <div class="px-6 py-3 flex items-center justify-between">
+            <span class="text-slate-400">Versão do Redis Server</span>
+            <span class="font-mono text-slate-200"><%= h @info['redis_version'] %></span>
+          </div>
+          <div class="px-6 py-3 flex items-center justify-between">
+            <span class="text-slate-400">Sistema Operacional Host</span>
+            <span class="font-mono text-slate-200"><%= h @info['os'] %></span>
+          </div>
+          <div class="px-6 py-3 flex items-center justify-between">
+            <span class="text-slate-400">Taxa de Fragmentação de Memória</span>
+            <span class="font-mono text-slate-200"><%= h @info['mem_fragmentation_ratio'] %></span>
+          </div>
+          <div class="px-6 py-3 flex items-center justify-between">
+            <span class="text-slate-400">Total de Conexões Recebidas</span>
+            <span class="font-mono text-slate-200"><%= h @info['total_connections_received'] %></span>
+          </div>
+          <div class="px-6 py-3 flex items-center justify-between">
+            <span class="text-slate-400">Comandos Executados no Total</span>
+            <span class="font-mono text-slate-200"><%= h @info['total_commands_processed'] %></span>
+          </div>
+        </div>
+      </div>
+    <% end %>
+  </div>
+<% end %>
