@@ -1,3 +1,6 @@
+{% extends "layout.html" %}
+
+{% block content %}
 <div class="flex-1 p-6 md:p-8 flex flex-col h-full max-w-6xl mx-auto w-full">
   <div class="flex flex-col md:flex-row md:items-center justify-between pb-4 mb-4 border-b border-slate-800 gap-4">
     <div>
@@ -5,7 +8,7 @@
         Terminal Web CLI
       </h2>
       <p class="text-xs text-slate-400 mt-0.5">
-        Conectado em: <span class="text-brand-400 font-mono"><%= h @current_server&.dig('name') %> (db<%= @active_db %>)</span>
+        Conectado em: <span class="text-brand-400 font-mono">{{ current_server['name'] if current_server else 'Nenhum' }} (db{{ active_db }})</span>
       </p>
     </div>
     <div class="flex gap-2">
@@ -22,7 +25,7 @@
         <div class="w-2.5 h-2.5 rounded-full bg-red-500/80"></div>
         <div class="w-2.5 h-2.5 rounded-full bg-amber-500/80"></div>
         <div class="w-2.5 h-2.5 rounded-full bg-emerald-500/80"></div>
-        <span class="text-xs font-mono text-slate-400 ml-2">redis-cli — <%= h @current_server&.dig('host') %>:<%= h @current_server&.dig('port') %> [db<%= @active_db %>]</span>
+        <span class="text-xs font-mono text-slate-400 ml-2">redis-cli — {{ current_server['host'] if current_server else '' }}:{{ current_server['port'] if current_server else '' }} [db{{ active_db }}]</span>
       </div>
       <div class="text-[11px] text-slate-500 font-mono">
         PING, DBSIZE, INFO, GET &lt;key&gt;
@@ -31,7 +34,7 @@
 
     <!-- Janela de output -->
     <div id="terminalScreen" class="flex-1 p-5 overflow-y-auto font-mono text-xs space-y-2 bg-slate-950">
-      <div class="text-slate-500 italic">Terminal conectado a <%= h @current_server&.dig('name') %> (<%= h @current_server&.dig('host') %>).</div>
+      <div class="text-slate-500 italic">Terminal conectado a {{ current_server['name'] if current_server else '' }} ({{ current_server['host'] if current_server else '' }}).</div>
       <div class="text-slate-500 italic">Comandos críticos como FLUSHALL e SHUTDOWN são bloqueados por segurança.</div>
     </div>
 
@@ -85,3 +88,4 @@
     terminalScreen.appendChild(div);
   }
 </script>
+{% endblock %}

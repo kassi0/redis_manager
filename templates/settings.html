@@ -1,3 +1,6 @@
+{% extends "layout.html" %}
+
+{% block content %}
 <div class="flex-1 p-6 md:p-8 overflow-y-auto max-w-7xl mx-auto w-full">
   <!-- Cabeçalho da Página de Configurações -->
   <div class="flex flex-col md:flex-row md:items-center justify-between pb-6 mb-6 border-b border-slate-800 gap-4">
@@ -17,11 +20,15 @@
   </div>
 
   <!-- Mensagens Flash -->
-  <% if @flash %>
-    <div class="mb-6 p-4 rounded-xl text-xs flex items-center gap-3 border shadow-sm <%= @flash[:type] == 'success' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300' : 'bg-blue-500/10 border-blue-500/20 text-blue-300' %>">
-      <span><%= h @flash[:text] %></span>
-    </div>
-  <% end %>
+  {% with messages = get_flashed_messages() %}
+    {% if messages %}
+      {% for flash_msg in messages %}
+        <div class="mb-6 p-4 rounded-xl text-xs flex items-center gap-3 border shadow-sm {{ 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300' if flash_msg.type == 'success' else 'bg-blue-500/10 border-blue-500/20 text-blue-300' }}">
+          <span>{{ flash_msg.text }}</span>
+        </div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
 
   <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
 
@@ -30,24 +37,24 @@
       <div class="bg-surface-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
         <div class="flex items-center justify-between pb-3 mb-4 border-b border-slate-800">
           <h3 class="text-sm font-bold text-white flex items-center gap-2">
-            <%= @edit_server ? '✏️ Editar Servidor' : '➕ Novo Servidor Redis' %>
+            {{ '✏️ Editar Servidor' if edit_server else '➕ Novo Servidor Redis' }}
           </h3>
-          <% if @edit_server %>
+          {% if edit_server %}
             <a href="/settings" class="text-xs text-brand-400 hover:underline">Cancelar Edição</a>
-          <% end %>
+          {% endif %}
         </div>
 
-        <form action="<%= @edit_server ? '/settings/update' : '/settings/create' %>" method="post" id="serverForm">
-          <% if @edit_server %>
-            <input type="hidden" name="id" value="<%= @edit_server['id'] %>">
-          <% end %>
+        <form action="{{ '/settings/update' if edit_server else '/settings/create' }}" method="post" id="serverForm">
+          {% if edit_server %}
+            <input type="hidden" name="id" value="{{ edit_server['id'] }}">
+          {% endif %}
 
           <!-- Nome Amigável -->
           <div class="mb-3">
             <label class="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1">
               Nome Amigável
             </label>
-            <input type="text" name="name" value="<%= h @edit_server&.dig('name') %>" required
+            <input type="text" name="name" value="{{ edit_server['name'] if edit_server else '' }}" required
                    placeholder="Ex: Redis HML DETRAN-BA, Cache Prod"
                    class="w-full bg-slate-950 text-slate-100 border border-slate-700 rounded-xl px-3 py-2 text-xs focus:ring-1 focus:ring-brand-500 focus:outline-none">
           </div>
@@ -58,7 +65,7 @@
               <label class="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1">
                 Host / IP / DNS
               </label>
-              <input type="text" name="host" id="inputHost" value="<%= h @edit_server&.dig('host') %>" required
+              <input type="text" name="host" id="inputHost" value="{{ edit_server['host'] if edit_server else '' }}" required
                      placeholder="ex: redis-hml.apps.ocp-prod..."
                      class="w-full bg-slate-950 text-slate-100 border border-slate-700 rounded-xl px-3 py-2 text-xs font-mono focus:ring-1 focus:ring-brand-500 focus:outline-none">
             </div>
@@ -66,7 +73,7 @@
               <label class="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1">
                 Porta
               </label>
-              <input type="number" name="port" id="inputPort" value="<%= @edit_server&.dig('port') || 6379 %>" required
+              <input type="number" name="port" id="inputPort" value="{{ edit_server['port'] if edit_server else 6379 }}" required
                      class="w-full bg-slate-950 text-slate-100 border border-slate-700 rounded-xl px-3 py-2 text-xs font-mono focus:ring-1 focus:ring-brand-500 focus:outline-none">
             </div>
           </div>
@@ -77,7 +84,7 @@
               Senha (AUTH / Requirepass)
             </label>
             <div class="relative">
-              <input type="password" name="password" id="inputPassword" value="<%= h @edit_server&.dig('password') %>"
+              <input type="password" name="password" id="inputPassword" value="{{ edit_server['password'] if edit_server else '' }}"
                      placeholder="Deixe em branco se não houver senha"
                      class="w-full bg-slate-950 text-slate-100 border border-slate-700 rounded-xl px-3 py-2 pr-10 text-xs font-mono focus:ring-1 focus:ring-brand-500 focus:outline-none">
               <button type="button" onclick="togglePassVisibility()" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-200">
@@ -92,12 +99,12 @@
               <label class="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1">
                 DB Index Padrão (0-15)
               </label>
-              <input type="number" name="db" id="inputDb" min="0" max="15" value="<%= @edit_server&.dig('db') || 0 %>"
+              <input type="number" name="db" id="inputDb" min="0" max="15" value="{{ edit_server['db'] if edit_server else 0 }}"
                      class="w-full bg-slate-950 text-slate-100 border border-slate-700 rounded-xl px-3 py-2 text-xs font-mono focus:ring-1 focus:ring-brand-500 focus:outline-none">
             </div>
             <div class="flex items-center pt-5">
               <label class="inline-flex items-center cursor-pointer">
-                <input type="checkbox" name="ssl" id="inputSsl" value="true" <%= 'checked' if @edit_server&.dig('ssl') %>
+                <input type="checkbox" name="ssl" id="inputSsl" value="true" {{ 'checked' if (edit_server and edit_server['ssl']) else '' }}
                        class="w-4 h-4 rounded bg-slate-900 border-slate-700 text-brand-600 focus:ring-brand-500">
                 <span class="ml-2 text-xs font-semibold text-slate-300">Conexão TLS/SSL</span>
               </label>
@@ -108,7 +115,7 @@
 
           <div class="flex flex-col sm:flex-row items-center gap-2">
             <button type="submit" class="w-full py-2 px-3 rounded-xl text-xs font-semibold bg-brand-600 hover:bg-brand-500 text-white shadow transition-all text-center">
-              <%= @edit_server ? 'Salvar Alterações' : 'Adicionar Servidor' %>
+              {{ 'Salvar Alterações' if edit_server else 'Adicionar Servidor' }}
             </button>
             <button type="button" onclick="testCurrentConfig()" id="btnTestConn" class="w-full py-2 px-3 rounded-xl text-xs font-semibold bg-surface-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-all text-center">
               🔌 Testar Conexão
@@ -123,7 +130,7 @@
       <div class="bg-surface-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
         <div class="px-5 py-3 border-b border-slate-800 bg-surface-850">
           <h3 class="text-sm font-bold text-white">Servidores no Banco SQLite3</h3>
-          <p class="text-[11px] text-slate-400">Total de <%= @servers.size %> conexões armazenadas</p>
+          <p class="text-[11px] text-slate-400">Total de {{ servers|length }} conexões armazenadas</p>
         </div>
 
         <div class="overflow-x-auto">
@@ -137,39 +144,39 @@
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-800">
-              <% @servers.each do |s| %>
+              {% for s in servers %}
                 <tr class="hover:bg-slate-800/30 transition-colors">
                   <td class="px-4 py-3">
-                    <div class="font-semibold text-white"><%= h s['name'] %></div>
+                    <div class="font-semibold text-white">{{ s['name'] }}</div>
                   </td>
                   <td class="px-4 py-3 font-mono text-slate-300">
-                    <%= h s['host'] %>:<%= h s['port'] %>
+                    {{ s['host'] }}:{{ s['port'] }}
                   </td>
                   <td class="px-4 py-3">
-                    <% if s['password'] && !s['password'].empty? %>
+                    {% if s['password'] %}
                       <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                         Senha Salva
                       </span>
-                    <% else %>
+                    {% else %}
                       <span class="text-slate-500 text-[11px]">Nenhuma</span>
-                    <% end %>
+                    {% endif %}
                   </td>
                   <td class="px-4 py-3 text-right space-x-2">
-                    <a href="/switch?server_id=<%= s['id'] %>&return_to=/" class="text-xs font-semibold text-brand-400 hover:text-brand-300">
+                    <a href="/switch?server_id={{ s['id'] }}&return_to=/" class="text-xs font-semibold text-brand-400 hover:text-brand-300">
                       Abrir
                     </a>
-                    <a href="/settings?edit_id=<%= s['id'] %>" class="text-xs text-slate-400 hover:text-white">
+                    <a href="/settings?edit_id={{ s['id'] }}" class="text-xs text-slate-400 hover:text-white">
                       Editar
                     </a>
-                    <form action="/settings/delete" method="post" class="inline" onsubmit="return confirm('Excluir <%= h s['name'] %>?');">
-                      <input type="hidden" name="id" value="<%= s['id'] %>">
+                    <form action="/settings/delete" method="post" class="inline" onsubmit="return confirm('Excluir {{ s['name'] }}?');">
+                      <input type="hidden" name="id" value="{{ s['id'] }}">
                       <button type="submit" class="text-xs text-red-400 hover:text-red-300">
                         Excluir
                       </button>
                     </form>
                   </td>
                 </tr>
-              <% end %>
+              {% endfor %}
             </tbody>
           </table>
         </div>
@@ -228,3 +235,4 @@
     }
   }
 </script>
+{% endblock %}

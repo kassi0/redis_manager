@@ -1,3 +1,6 @@
+{% extends "layout.html" %}
+
+{% block content %}
 <!-- ========================================================================= -->
 <!-- ANOTHER REDIS DESKTOP MANAGER INTERFACE (3 COLUNAS) -->
 <!-- ========================================================================= -->
@@ -13,18 +16,18 @@
     <form action="/switch" method="get">
       <select name="server_id" onchange="this.form.submit()"
               class="w-full bg-slate-900 border border-slate-700 text-slate-100 text-xs font-semibold rounded-lg px-2.5 py-1.5 focus:ring-1 focus:ring-brand-500 focus:outline-none cursor-pointer truncate">
-        <% @servers.each do |s| %>
-          <option value="<%= s['id'] %>" <%= 'selected' if @current_server && s['id'] == @current_server['id'] %>>
-            <%= h s['name'] %>
+        {% for s in servers %}
+          <option value="{{ s['id'] }}" {{ 'selected' if current_server and s['id'] == current_server['id'] else '' }}>
+            {{ s['name'] }}
           </option>
-        <% end %>
+        {% endfor %}
       </select>
     </form>
-    <% if @current_server %>
+    {% if current_server %}
       <div class="text-[10px] text-slate-400 font-mono mt-1 truncate">
-        <%= h @current_server['host'] %>:<%= h @current_server['port'] %>
+        {{ current_server['host'] }}:{{ current_server['port'] }}
       </div>
-    <% end %>
+    {% endif %}
   </div>
 
   <!-- Lista de Bancos (DB0 a DB15) estilo ARDM -->
@@ -34,39 +37,39 @@
       <button onclick="refreshKeys()" class="hover:text-slate-300" title="Atualizar dados">🔄</button>
     </div>
 
-    <% @databases.each do |db_item| %>
-      <a href="/switch?server_id=<%= @current_server&.dig('id') %>&db=<%= db_item[:index] %>"
-         class="flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-all <%= db_item[:active] ? 'bg-brand-500/20 text-brand-300 border border-brand-500/30 font-semibold' : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-200' %>">
+    {% for db_item in databases %}
+      <a href="/switch?server_id={{ current_server['id'] if current_server else '' }}&db={{ db_item.index }}"
+         class="flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-all {{ 'bg-brand-500/20 text-brand-300 border border-brand-500/30 font-semibold' if db_item.active else 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-200' }}">
         <div class="flex items-center gap-2">
-          <span class="w-2 h-2 rounded-full <%= db_item[:keys_count] > 0 ? 'bg-emerald-400 shadow-sm shadow-emerald-400/50' : 'bg-slate-600' %>"></span>
-          <span>db<%= db_item[:index] %></span>
+          <span class="w-2 h-2 rounded-full {{ 'bg-emerald-400 shadow-sm shadow-emerald-400/50' if db_item.keys_count > 0 else 'bg-slate-600' }}"></span>
+          <span>db{{ db_item.index }}</span>
         </div>
         <div class="flex items-center gap-1.5">
-          <span class="px-1.5 py-0.5 rounded text-[10px] font-mono <%= db_item[:keys_count] > 0 ? 'bg-slate-800 text-slate-300 font-bold' : 'text-slate-600' %>">
-            <%= db_item[:keys_count] %>
+          <span class="px-1.5 py-0.5 rounded text-[10px] font-mono {{ 'bg-slate-800 text-slate-300 font-bold' if db_item.keys_count > 0 else 'text-slate-600' }}">
+            {{ db_item.keys_count }}
           </span>
         </div>
       </a>
-    <% end %>
+    {% endfor %}
   </div>
 
   <!-- Métricas Rápidas do Nó Ativo no Rodapé da Coluna 1 -->
-  <% if @server_info %>
+  {% if server_info %}
     <div class="p-3 bg-surface-850 border-t border-slate-800 text-[11px] text-slate-400 space-y-1 font-mono">
       <div class="flex justify-between">
         <span>Memória:</span>
-        <span class="text-sky-400 font-bold"><%= h @server_info['used_memory_human'] %></span>
+        <span class="text-sky-400 font-bold">{{ server_info.get('used_memory_human', 'N/A') }}</span>
       </div>
       <div class="flex justify-between">
         <span>Clientes:</span>
-        <span class="text-emerald-400"><%= h @server_info['connected_clients'] %></span>
+        <span class="text-emerald-400">{{ server_info.get('connected_clients', 'N/A') }}</span>
       </div>
       <div class="flex justify-between">
         <span>Versão:</span>
-        <span class="text-slate-300"><%= h @server_info['redis_version'] %></span>
+        <span class="text-slate-300">{{ server_info.get('redis_version', 'N/A') }}</span>
       </div>
     </div>
-  <% end %>
+  {% endif %}
 </aside>
 
 <!-- COLUNA 2: LISTAGEM DE CHAVES (BUSCA, FILTRO, TTL) -->
@@ -101,6 +104,13 @@
       </select>
     </div>
   </div>
+
+  <!-- Alerta de erro de conexão se houver -->
+  {% if error %}
+    <div class="p-3 bg-red-500/10 border-b border-red-500/20 text-red-400 text-xs font-mono">
+      {{ error }}
+    </div>
+  {% endif %}
 
   <!-- Lista Scrollável de Chaves -->
   <div id="keysListContainer" class="flex-1 overflow-y-auto divide-y divide-slate-800/40 select-none">
@@ -228,7 +238,7 @@
   <div class="bg-surface-900 border border-slate-800 rounded-2xl w-full max-w-lg p-6 shadow-2xl">
     <div class="flex items-center justify-between pb-3 mb-4 border-b border-slate-800">
       <h3 class="text-sm font-bold text-white flex items-center gap-2">
-        ➕ Criar Nova Chave (db<%= @active_db %>)
+        ➕ Criar Nova Chave (db{{ active_db }})
       </h3>
       <button onclick="closeNewKeyModal()" class="text-slate-400 hover:text-white">&times;</button>
     </div>
@@ -320,6 +330,39 @@
     } catch (err) {
       container.innerHTML = `<div class="p-4 text-xs text-red-400">Falha na requisição: ${err.message}</div>`;
       label.textContent = 'Erro';
+    }
+  }
+
+  // 1.1 Carregar mais chaves (SCAN pagination)
+  async function loadMoreKeys() {
+    if (nextCursor === '0') return;
+    const pattern = document.getElementById('searchPattern').value.trim() || '*';
+    const label = document.getElementById('keysCountLabel');
+
+    try {
+      const res = await fetch(`/api/keys?pattern=${encodeURIComponent(pattern)}&cursor=${encodeURIComponent(nextCursor)}`);
+      const data = await res.json();
+
+      if (data.error) {
+        alert('Erro ao paginar: ' + data.error);
+        return;
+      }
+
+      const newKeys = data.keys || [];
+      nextCursor = data.cursor;
+      currentKeys = currentKeys.concat(newKeys);
+
+      renderKeysList();
+      label.textContent = `${currentKeys.length} chaves encontradas`;
+
+      const moreBar = document.getElementById('scanMoreBar');
+      if (nextCursor !== '0') {
+        moreBar.classList.remove('hidden');
+      } else {
+        moreBar.classList.add('hidden');
+      }
+    } catch (err) {
+      alert('Falha ao paginar: ' + err.message);
     }
   }
 
@@ -674,3 +717,4 @@
       .replace(/'/g, "&#039;");
   }
 </script>
+{% endblock %}

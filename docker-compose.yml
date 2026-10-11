@@ -10,7 +10,7 @@ services:
       - redis_sqlite_data:/app/data
     environment:
       - PORT=8080
-      - RACK_ENV=production
+      - PYTHONUNBUFFERED=1
       - SQLITE_DB_PATH=/app/data/redis_manager.sqlite3
 
 volumes:

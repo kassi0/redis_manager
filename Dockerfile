@@ -1,19 +1,20 @@
-# Imagem base oficial Ruby minimalista e segura
-FROM docker.io/library/ruby:3.2-alpine
-
-# Instala dependências de build necessárias para compilar Puma e a gem sqlite3 com musl
-RUN apk add --no-cache build-base tzdata sqlite-dev sqlite-libs
+# Imagem oficial Red Hat UBI 10 Minimal com Python 3.14
+FROM registry.redhat.io/ubi10/python-314-minimal
 
 # Definir diretório de trabalho na aplicação
 WORKDIR /app
 
-# Forçar o bundler a compilar a gem sqlite3 a partir do código fonte (para compatibilidade com musl/Alpine)
-RUN bundle config set --global force_ruby_platform true
+# Variáveis padrão de execução
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PORT=8080 \
+    SQLITE_DB_PATH=/app/data/redis_manager.sqlite3 \
+    PATH="/app/.local/bin:${PATH}"
 
-# Copia Gemfile e instala dependências de produção
-COPY Gemfile ./
-RUN bundle config set --local without 'development test' && \
-    bundle install --jobs 4 --retry 3
+# Copia requirements e instala dependências de produção
+COPY requirements.txt ./
+RUN python3 -m pip install --no-cache-dir --upgrade pip && \
+    python3 -m pip install --no-cache-dir -r requirements.txt
 
 # Copia todo o código-fonte da aplicação
 COPY . .
@@ -28,16 +29,10 @@ RUN chgrp -R 0 /app && \
     chmod -R g=u /app && \
     chmod -R 775 /app/data
 
-# OpenShift não roda como root (usar usuário não-privilegiado 1001)
+# OpenShift não roda como root (usuário não-privilegiado 1001)
 USER 1001
-
-# Variáveis padrão de execução
-ENV RACK_ENV=production \
-    PORT=8080 \
-    PUMA_THREADS=5 \
-    SQLITE_DB_PATH=/app/data/redis_manager.sqlite3
 
 EXPOSE 8080
 
-# Inicia o servidor web Puma
-CMD ["bundle", "exec", "puma", "-C", "puma.rb"]
+# Inicia o servidor WSGI Gunicorn (multi-worker e multi-thread)
+CMD ["gunicorn", "--bind", "0.0.0.0:8080", "--workers", "2", "--threads", "4", "--access-logfile", "-", "--error-logfile", "-", "app:app"]
