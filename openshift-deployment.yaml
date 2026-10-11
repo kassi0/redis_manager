@@ -1,9 +1,62 @@
+# =========================================================================
+# OPENSHIFT MANIFESTS: REDIS MANAGER (PYTHON 3.14 + UBI 10 MINIMAL)
+# =========================================================================
+
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  name: redis-manager
+  labels:
+    app: redis-manager
+---
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: redis-manager
+  labels:
+    app: redis-manager
+spec:
+  output:
+    to:
+      kind: ImageStreamTag
+      name: redis-manager:latest
+  source:
+    type: Git
+    git:
+      uri: https://github.com/kassi0/redis_manager.git
+      ref: main
+  strategy:
+    type: Docker
+    dockerStrategy:
+      dockerfilePath: Dockerfile
+  triggers:
+    - type: ConfigChange
+    - type: ImageChange
+---
+# PVC para persistir o banco SQLite3 no OpenShift
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: redis-manager-pvc
+  labels:
+    app: redis-manager
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: redis-manager
   labels:
     app: redis-manager
+  annotations:
+    # Trigger automático: quando o BuildConfig gerar uma nova imagem, o OpenShift atualiza o Deployment
+    image.openshift.io/triggers: |-
+      [{"from":{"kind":"ImageStreamTag","name":"redis-manager:latest"},"fieldPath":"spec.template.spec.containers[?(@.name==\"redis-manager\")].image"}]
 spec:
   replicas: 1
   selector:
@@ -17,7 +70,7 @@ spec:
       containers:
         - name: redis-manager
           image: redis-manager:latest
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           ports:
             - containerPort: 8080
               name: http
@@ -54,18 +107,6 @@ spec:
         - name: sqlite-storage
           persistentVolumeClaim:
             claimName: redis-manager-pvc
----
-# PVC para persistir o banco SQLite3 no OpenShift
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: redis-manager-pvc
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 1Gi
 ---
 apiVersion: v1
 kind: Service

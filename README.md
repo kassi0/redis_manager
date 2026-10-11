@@ -64,23 +64,16 @@ A aplicação foi preparada especificamente para os padrões do OpenShift:
    oc project meu-namespace
    ```
 
-2. **Crie a build direto do código ou faça push da imagem:**
-   Se preferir usar o OpenShift BuildConfig (Binary build):
-   ```bash
-   oc new-build --strategy=docker --binary --name=redis-manager
-   oc start-build redis-manager --from-dir=. --follow
-   ```
-
-   *Ou caso faça push para o Registry interno:*
-   ```bash
-   podman tag redis-manager:latest default-route-openshift-image-registry.apps.cluster.com/meu-namespace/redis-manager:latest
-   podman push default-route-openshift-image-registry.apps.cluster.com/meu-namespace/redis-manager:latest
-   ```
-
-3. **Aplicar os manifests de PVC, Deployment, Service e Route:**
+2. **Aplicar os manifests (ImageStream, BuildConfig, PVC, Deployment, Service e Route):**
    ```bash
    oc apply -f openshift-deployment.yaml
    ```
+
+3. **Disparar o build da imagem a partir do repositório Git:**
+   ```bash
+   oc start-build redis-manager --follow
+   ```
+   *(O OpenShift clonará o repositório `https://github.com/kassi0/redis_manager.git`, executará o build Docker com o UBI 10 e acionará o rollout automático do pod).*
 
 4. **Obter a URL pública gerada pela Route:**
    ```bash
