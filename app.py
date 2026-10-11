@@ -117,13 +117,9 @@ def healthz():
 @app.route('/ready', methods=['GET'])
 def ready():
     try:
-        srv = get_current_server_config()
-        if srv:
-            client = get_redis_client(srv)
-            client.ping()
-            return jsonify({'status': 'ready', 'server': srv['name']})
-        else:
-            return jsonify({'status': 'ready', 'server': 'none'})
+        # Verifica se a aplicação e a persistência SQLite estão operacionais
+        ConfigStore.load_servers()
+        return jsonify({'status': 'ready'})
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)}), 503
 
